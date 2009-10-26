@@ -35,8 +35,8 @@ the reference implementation. This is a partial list of those requirements:
 Implementation
 
 There are two main implementation tasks for the Tor reference implementation:
-Teaching the configuration framework to handle [] and :::::: v6 style
-addresses. This is partially done already.
+Teaching the configuration framework to handle [:::::] v6 style addresses. This
+is partially done already.
 Ensuring that Tor can connect to v6 addresses for bridge client connections
 and bind to v6 sockets for bridge relays. This is not implemented yet.
 

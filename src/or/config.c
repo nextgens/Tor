@@ -4439,6 +4439,18 @@ options_init_logs(or_options_t *options, int validate_only)
 static int
 parse_bridge_line(const char *line, int validate_only)
 {
+  /*
+
+  ipv6 client configuration
+
+  Ensure this can handle a bridge lines like so:
+
+  bridge [123:45:6789::5005:11]:443 BFD6AB072C9B78476D716CFD802CCC1F7C44462E
+  bridge 123:45:6789::5005:11:443 BFD6AB072C9B78476D716CFD802CCC1F7C44462E
+  bridge 1.2.3.4:443 BFD6AB072C9B78476D716CFD802CCC1F7C44462E
+
+  */
+
   smartlist_t *items = NULL;
   int r;
   char *addrport=NULL, *fingerprint=NULL;

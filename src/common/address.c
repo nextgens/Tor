@@ -1124,7 +1124,7 @@ parse_addr_port(int severity, const char *addrport, char **address,
 
   tor_assert(addrport);
 
-  colon = strchr(addrport, ':');
+  colon = strrchr(addrport, ':');
   if (colon) {
     _address = tor_strndup(addrport, colon-addrport);
     _port = (int) tor_parse_long(colon+1,10,1,65535,NULL,NULL);

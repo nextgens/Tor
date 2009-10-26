@@ -1,0 +1,51 @@
+Filename: xxx-ipv6-bridges.txt
+Title: IPv6 bridge support
+Author: Florent Daignière and Jacob Appelbaum
+Created: 26-October-2009
+Status: Draft
+
+
+                              IPv6 bridge support
+
+Introduction
+
+Tor is currently not IPv6-ready. This proposal is an incremental step towards
+full v6 support for Tor. By implementing v6 support for bridging activity, we
+hope to enable greater client access to the Tor network. This proposal is
+complementary to proposal 117 (ipv6-exits).
+
+Motivation
+
+There are two main reasons to enable v6 entry into the Tor network with bridges:
+- It's an easy first step towards full ipv6 support for Tor entry and exiting
+- It may help people who can't access the Tor network to do so (most filtering
+technologies are not yet ipv6-enabled)
+
+Requirements
+
+To implement v6 bridge support, we believe that Tor will need modifications to
+the reference implementation. This is a partial list of those requirements:
+- Bridges will need to bind and listen on at least one v6 interface
+- Bridges must publish bridge descriptors including their v6 addresses
+- Bridges must be able to connect to v4 Tor relays
+- The bridge directory authority needs to be able to process v6 addresses
+- Clients will need to connect using their v6 interfaces to bridges
+
+Implementation
+
+There are two main implementation tasks for the Tor reference implementation:
+Teaching the configuration framework to handle [] and :::::: v6 style
+addresses. This is partially done already.
+Ensuring that Tor can connect to v6 addresses for bridge client connections
+and bind to v6 sockets for bridge relays. This is not implemented yet.
+
+Example usage
+
+We assume that our target Tor user has only IPv6 connectivity. We assume they
+have a friend, have been given a v6 bridge by bridges@torproject.org or have
+access to another bridge distribution method. The user must configure Tor by
+adding a bridge line with at least the v6 address. Optionally the user can
+include a port number and a fingerprint. This is just like normal bridge usage.
+The Tor client will open a connection to the configured v6 bridge. Once this
+connection to the v6 bridge is open the user will be able to reach the proper
+Tor network.

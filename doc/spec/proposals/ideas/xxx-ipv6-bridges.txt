@@ -30,6 +30,7 @@ the reference implementation. This is a partial list of those requirements:
 - Bridges must be able to connect to v4 Tor relays
 - The bridge directory authority needs to be able to process v6 addresses
 - Clients will need to connect using their v6 interfaces to bridges
+- v6 addresses must use the explicit [:::::] notation
 
 Implementation
 
@@ -49,3 +50,24 @@ include a port number and a fingerprint. This is just like normal bridge usage.
 The Tor client will open a connection to the configured v6 bridge. Once this
 connection to the v6 bridge is open the user will be able to reach the proper
 Tor network.
+
+Bridge operators will be required to have at least ipv4 connectivity.
+Optionally, bridge operators will have at least one ipv6 address. The bridge
+will accept connections from users on their v6 interface. Tor will complete all
+other connections that are not initiated by the user connecting to the v6
+address. The v6 interface only exists to allow entry into the bridge. Tor must
+handle everything internally as it would if the client to bridge transport was
+ipv4.
+
+Here's a terrible ascii diagram to illustrate Tor client usage with a v6
+bridge:
+
+[ Tor client ]
+   \--> tcp/v6 connection
+          \--> [ Tor bridge ]
+                  \--> tcp/v4 --> [ Tor Network ]
+                                     \
+                                      \tcp/v4-> [Tor Exit Node]
+                                             \ tcp/v4 --> [example.com:80]
+
+

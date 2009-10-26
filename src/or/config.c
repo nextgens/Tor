@@ -4439,21 +4439,6 @@ options_init_logs(or_options_t *options, int validate_only)
 static int
 parse_bridge_line(const char *line, int validate_only)
 {
-  /*
-
-  ipv6 client configuration for bridging
-
-  Ensure this can handle bridge lines like so:
-
-  bridge [123:45:6789::5005:11]:443 BFD6AB072C9B78476D716CFD802CCC1F7C44462E
-  bridge 123:45:6789::5005:11:443 BFD6AB072C9B78476D716CFD802CCC1F7C44462E
-  bridge 1.2.3.4:443 BFD6AB072C9B78476D716CFD802CCC1F7C44462E
-
-  Currently non-bracketed v6 addresses return:
-  Oct 26 01:32:24.245 [warn] Error parsing Bridge address '123:45:6789::5005:11:443'
-
-  */
-
   smartlist_t *items = NULL;
   int r;
   char *addrport=NULL, *fingerprint=NULL;

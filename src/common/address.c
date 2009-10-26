@@ -990,7 +990,7 @@ tor_addr_port_parse(const char *s, tor_addr_t *addr_out, uint16_t *port_out)
     else
       port = NULL;
   } else {
-    port = strchr(s, ':');
+    port = strrchr(s, ':');
     if (port)
       tmp = tor_strndup(s, port-s);
     else

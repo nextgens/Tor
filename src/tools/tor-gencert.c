@@ -162,18 +162,16 @@ parse_commandline(int argc, char **argv)
     } else if (!strcmp(argv[i], "-v")) {
       verbose = 1;
     } else if (!strcmp(argv[i], "-a")) {
-      uint32_t addr;
+      tor_addr_t addr;
       uint16_t port;
       char b[INET_NTOA_BUF_LEN];
-      struct in_addr in;
       if (i+1>=argc) {
         fprintf(stderr, "No argument to -a\n");
         return 1;
       }
       if (parse_addr_port(LOG_ERR, argv[++i], NULL, &addr, &port)<0)
         return 1;
-      in.s_addr = htonl(addr);
-      tor_inet_ntoa(&in, b, sizeof(b));
+      tor_addr_to_str(b, &addr, sizeof(b),0);
       address = tor_malloc(INET_NTOA_BUF_LEN+32);
       tor_snprintf(address, INET_NTOA_BUF_LEN+32, "%s:%d", b, (int)port);
     } else if (!strcmp(argv[i], "--create-identity-key")) {

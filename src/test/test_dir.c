@@ -771,7 +771,7 @@ test_dir_v3_networkstatus(void)
   voter = tor_malloc_zero(sizeof(networkstatus_voter_info_t));
   voter->nickname = tor_strdup("Voter1");
   voter->address = tor_strdup("1.2.3.4");
-  voter->addr = 0x01020304;
+  tor_addr_from_ipv4h(voter->addr, 0x01020304);
   voter->dir_port = 80;
   voter->or_port = 9000;
   voter->contact = tor_strdup("voter@example.com");
@@ -932,7 +932,7 @@ test_dir_v3_networkstatus(void)
   tor_free(voter->address);
   voter->nickname = tor_strdup("Voter2");
   voter->address = tor_strdup("2.3.4.5");
-  voter->addr = 0x02030405;
+  tor_addr_from_ipv4h(voter->addr, 0x02030405);
   crypto_pk_get_digest(cert2->identity_key, voter->identity_digest);
   smartlist_add(vote->known_flags, tor_strdup("MadeOfCheese"));
   smartlist_add(vote->known_flags, tor_strdup("MadeOfTin"));
@@ -974,7 +974,7 @@ test_dir_v3_networkstatus(void)
   tor_free(voter->address);
   voter->nickname = tor_strdup("Voter3");
   voter->address = tor_strdup("3.4.5.6");
-  voter->addr = 0x03040506;
+  tor_addr_from_ipv4h(voter->addr, 0x03040506);
   crypto_pk_get_digest(cert3->identity_key, voter->identity_digest);
   /* This one has a legacy id. */
   memset(voter->legacy_id_digest, (int)'A', DIGEST_LEN);

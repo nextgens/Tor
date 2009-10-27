@@ -1876,8 +1876,8 @@ typedef struct authority_cert_t {
   char signing_key_digest[DIGEST_LEN];
   /** The listed expiration time of this certificate. */
   time_t expires;
-  /** This authority's IPv4 address, in host order. */
-  uint32_t addr;
+  /** This authority's address, in host order. */
+  tor_addr_t *addr;
   /** This authority's directory port. */
   uint16_t dir_port;
   /** True iff this certificate was cross-certified by signing the identity
@@ -4884,7 +4884,7 @@ int router_digest_is_trusted_dir_type(const char *digest,
 #define router_digest_is_trusted_dir(d) \
   router_digest_is_trusted_dir_type((d), NO_AUTHORITY)
 
-int router_addr_is_trusted_dir(uint32_t addr);
+int router_addr_is_trusted_dir(tor_addr_t *addr);
 int hexdigest_to_digest(const char *hexdigest, char *digest);
 routerinfo_t *router_get_by_hexdigest(const char *hexdigest);
 routerinfo_t *router_get_by_digest(const char *digest);

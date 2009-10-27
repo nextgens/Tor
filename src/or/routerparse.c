@@ -1782,7 +1782,7 @@ authority_cert_parse_from_string(const char *s, const char **end_of_string)
       tor_free(address);
       goto err;
     }
-    cert->addr = ntohl(in.s_addr);
+    tor_addr_from_ipv4n(cert->addr, in.s_addr);
     tor_free(address);
   }
 
@@ -2565,7 +2565,7 @@ networkstatus_parse_vote_from_string(const char *s, const char **eos_out,
                  escaped(tok->args[3]));
         goto err;
       }
-      voter->addr = ntohl(in.s_addr);
+      tor_addr_from_ipv4n(voter->addr, in.s_addr);
       voter->dir_port = (uint16_t)
         tor_parse_long(tok->args[4], 10, 0, 65535, &ok, NULL);
       if (!ok)

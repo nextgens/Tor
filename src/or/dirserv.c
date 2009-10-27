@@ -2116,6 +2116,7 @@ get_possible_sybil_list(const smartlist_t *routers)
   digestmap_t *omit_as_sybil;
   smartlist_t *routers_by_ip = smartlist_create();
   uint32_t last_addr;
+  tor_addr_t tmpaddr;
   int addr_count;
   /* Allow at most this number of Tor servers on a single IP address, ... */
   int max_with_same_addr = options->AuthDirMaxServersPerAddr;
@@ -2138,7 +2139,8 @@ get_possible_sybil_list(const smartlist_t *routers)
         last_addr = ri->addr;
         addr_count = 1;
       } else if (++addr_count > max_with_same_addr) {
-        if (!router_addr_is_trusted_dir(ri->addr) ||
+        tor_addr_from_ipv4h(&tmpaddr, ri->addr);
+        if (!router_addr_is_trusted_dir(&tmpaddr) ||
             addr_count > max_with_same_addr_on_authority)
           digestmap_set(omit_as_sybil, ri->cache_info.identity_digest, ri);
       }

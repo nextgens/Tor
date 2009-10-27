@@ -1531,7 +1531,7 @@ check_descriptor_ipaddress_changed(time_t now)
 
 /** The most recently guessed value of our IP address, based on directory
  * headers. */
-static uint32_t last_guessed_ip = 0;
+static tor_addr_t *last_guessed_ip = NULL;
 
 /** A directory server <b>d_conn</b> told us our IP address is
  * <b>suggestion</b>.
@@ -1541,54 +1541,8 @@ void
 router_new_address_suggestion(const char *suggestion,
                               const dir_connection_t *d_conn)
 {
-  uint32_t addr, cur = 0;
-  struct in_addr in;
-  or_options_t *options = get_options();
-
-  /* first, learn what the IP address actually is */
-  if (!tor_inet_aton(suggestion, &in)) {
-    log_debug(LD_DIR, "Malformed X-Your-Address-Is header %s. Ignoring.",
-              escaped(suggestion));
-    return;
-  }
-  addr = ntohl(in.s_addr);
-
-  log_debug(LD_DIR, "Got X-Your-Address-Is: %s.", suggestion);
-
-  if (!server_mode(options)) {
-    last_guessed_ip = addr; /* store it in case we need it later */
-    return;
-  }
-
-  if (resolve_my_address(LOG_INFO, options, cur, NULL) >= 0) {
-    /* We're all set -- we already know our address. Great. */
-    last_guessed_ip = cur; /* store it in case we need it later */
-    return;
-  }
-  if (is_internal_IP(addr, 0)) {
-    /* Don't believe anybody who says our IP is, say, 127.0.0.1. */
-    return;
-  }
-  if (tor_addr_eq_ipv4h(&d_conn->_base.addr, addr)) {
-    /* Don't believe anybody who says our IP is their IP. */
-    log_debug(LD_DIR, "A directory server told us our IP address is %s, "
-              "but he's just reporting his own IP address. Ignoring.",
-              suggestion);
-    return;
-  }
-
-  /* Okay.  We can't resolve our own address, and X-Your-Address-Is is giving
-   * us an answer different from what we had the last time we managed to
-   * resolve it. */
-  if (last_guessed_ip != addr) {
-    control_event_server_status(LOG_NOTICE,
-                                "EXTERNAL_ADDRESS ADDRESS=%s METHOD=DIRSERV",
-                                suggestion);
-    log_addr_has_changed(LOG_NOTICE, last_guessed_ip, addr,
-                         d_conn->_base.address);
-    ip_address_changed(0);
-    last_guessed_ip = addr; /* router_rebuild_descriptor() will fetch it */
-  }
+	suggestion = NULL;
+	d_conn = NULL;
 }
 
 /** We failed to resolve our address locally, but we'd like to build
@@ -1598,8 +1552,8 @@ router_new_address_suggestion(const char *suggestion,
 static int
 router_guess_address_from_dir_headers(tor_addr_t *guess)
 {
-  if (last_guessed_ip) {
-    *guess = last_guessed_ip;
+  if (last_guessed_ip == NULL) {
+    guess = last_guessed_ip;
     return 0;
   }
   return -1;

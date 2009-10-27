@@ -225,7 +225,7 @@ trusted_dirs_load_certs_from_string(const char *contents, int from_store,
       if (cert->addr && cert->dir_port &&
           (ds->addr != cert->addr ||
            ds->dir_port != cert->dir_port)) {
-        char *a = tor_dup_ip(cert->addr);
+        char *a = tor_dup_addr(cert->addr);
         log_notice(LD_DIR, "Updating address for directory authority %s "
                    "from %s:%d to %s:%d based on certificate.",
                    ds->nickname, ds->address, (int)ds->dir_port,
@@ -1152,7 +1152,6 @@ router_pick_trusteddirserver_impl(authority_type_t type, int flags,
     {
       int is_overloaded =
           d->fake_status.last_dir_503_at + DIR_503_TIMEOUT > now;
-      tor_addr_t addr;
       if (!d->is_running) continue;
       if ((type & d->type) == 0)
         continue;
@@ -1162,14 +1161,11 @@ router_pick_trusteddirserver_impl(authority_type_t type, int flags,
       if (requireother && me && router_digest_is_me(d->digest))
           continue;
 
-      /* XXXX IP6 proposal 118 */
-      tor_addr_from_ipv4h(&addr, d->addr);
-
       if (no_serverdesc_fetching) {
         if (connection_get_by_type_addr_port_purpose(
-            CONN_TYPE_DIR, &addr, d->dir_port, DIR_PURPOSE_FETCH_SERVERDESC)
+            CONN_TYPE_DIR, d->addr, d->dir_port, DIR_PURPOSE_FETCH_SERVERDESC)
          || connection_get_by_type_addr_port_purpose(
-             CONN_TYPE_DIR, &addr, d->dir_port, DIR_PURPOSE_FETCH_EXTRAINFO)) {
+             CONN_TYPE_DIR, d->addr, d->dir_port, DIR_PURPOSE_FETCH_EXTRAINFO)) {
           //log_debug(LD_DIR, "We have an existing connection to fetch "
           //           "descriptor from %s; delaying",d->description);
           ++n_busy;
@@ -1180,11 +1176,11 @@ router_pick_trusteddirserver_impl(authority_type_t type, int flags,
       if (prefer_tunnel &&
           d->or_port &&
           (!fascistfirewall ||
-           fascist_firewall_allows_address_or(&addr, d->or_port)))
+           fascist_firewall_allows_address_or(d->addr, d->or_port)))
         smartlist_add(is_overloaded ? overloaded_tunnel : tunnel,
                       &d->fake_status);
       else if (!fascistfirewall ||
-               fascist_firewall_allows_address_dir(&addr, d->dir_port))
+               fascist_firewall_allows_address_dir(d->addr, d->dir_port))
         smartlist_add(is_overloaded ? overloaded_direct : direct,
                       &d->fake_status);
     }
@@ -2118,12 +2114,12 @@ router_digest_is_trusted_dir_type(const char *digest, authority_type_t type)
 /** Return true iff <b>addr</b> is the address of one of our trusted
  * directory authorities. */
 int
-router_addr_is_trusted_dir(uint32_t addr)
+router_addr_is_trusted_dir(tor_addr_t *addr)
 {
   if (!trusted_dir_servers)
     return 0;
   SMARTLIST_FOREACH(trusted_dir_servers, trusted_dir_server_t *, ent,
-    if (ent->addr == addr)
+    if (tor_addr_eq(ent->addr, addr))
       return 1;
     );
   return 0;
@@ -3691,21 +3687,21 @@ add_trusted_dir_server(const char *nickname, const char *address,
                        authority_type_t type)
 {
   trusted_dir_server_t *ent;
-  tor_addr_t *a;
+  tor_addr_t a;
   char *hostname = NULL;
   size_t dlen;
   if (!trusted_dir_servers)
     trusted_dir_servers = smartlist_create();
 
   if (!address) { /* The address is us; we should guess. */
-    if (resolve_my_address(LOG_WARN, get_options(), a, &hostname) < 0) {
+    if (resolve_my_address(LOG_WARN, get_options(), &a, &hostname) < 0) {
       log_warn(LD_CONFIG,
                "Couldn't find a suitable address when adding ourself as a "
                "trusted directory server.");
       return NULL;
     }
   } else {
-    if (tor_lookup_hostname(address, a)) {
+    if (tor_lookup_hostname(address, &a)) {
       log_warn(LD_CONFIG,
                "Unable to lookup address for directory server at '%s'",
                address);
@@ -3717,7 +3713,7 @@ add_trusted_dir_server(const char *nickname, const char *address,
   ent = tor_malloc_zero(sizeof(trusted_dir_server_t));
   ent->nickname = nickname ? tor_strdup(nickname) : NULL;
   ent->address = hostname;
-  ent->addr = a->addr;
+  ent->addr = &a;
   ent->dir_port = dir_port;
   ent->or_port = or_port;
   ent->is_running = 1;
@@ -3735,7 +3731,7 @@ add_trusted_dir_server(const char *nickname, const char *address,
     tor_snprintf(ent->description, dlen, "directory server at %s:%d",
                  hostname, (int)dir_port);
 
-  ent->fake_status.addr = ent->addr;
+  ent->fake_status.addr = tor_addr_to_ipv4h(ent->addr);
   memcpy(ent->fake_status.identity_digest, digest, DIGEST_LEN);
   if (nickname)
     strlcpy(ent->fake_status.nickname, nickname,

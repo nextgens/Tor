@@ -742,7 +742,7 @@ create_inet_sockaddr(const char *listenaddress, uint16_t listenport,
              "Error parsing/resolving ListenAddress %s", listenaddress);
     goto err;
   }
-  if (addr->family == AF_INET6) {
+  if (addr != NULL && addr->family == AF_INET6) {
     log_info(LD_CONFIG, "Error parsing ListenAddress: we found an ipv6 address! %s", listenaddress);
     goto err;
   }

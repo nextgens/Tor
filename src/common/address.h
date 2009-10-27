@@ -50,6 +50,9 @@ void tor_addr_make_unspec(tor_addr_t *a);
 static INLINE const struct in6_addr *
 tor_addr_to_in6(const tor_addr_t *a)
 {
+  if(a == NULL)
+    return 0;
+  else
   return a->family == AF_INET6 ? &a->addr.in6_addr : NULL;
 }
 
@@ -62,6 +65,9 @@ tor_addr_to_in6(const tor_addr_t *a)
 static INLINE uint32_t
 tor_addr_to_ipv4n(const tor_addr_t *a)
 {
+  if(a == NULL)
+    return 0;
+  else
   return a->family == AF_INET ? a->addr.in_addr.s_addr : 0;
 }
 /** Return an IPv4 address in host order for <b>a</b>, or 0 if
@@ -69,6 +75,9 @@ tor_addr_to_ipv4n(const tor_addr_t *a)
 static INLINE uint32_t
 tor_addr_to_ipv4h(const tor_addr_t *a)
 {
+  if(a == NULL)
+    return 0;
+  else
   return ntohl(tor_addr_to_ipv4n(a));
 }
 /* Given an IPv6 address, return its mapped IPv4 address in host order, or
@@ -78,6 +87,9 @@ tor_addr_to_ipv4h(const tor_addr_t *a)
 static INLINE uint32_t
 tor_addr_to_mapped_ipv4h(const tor_addr_t *a)
 {
+  if(a == NULL)
+    return 0;
+  else
   return a->family == AF_INET6 ? ntohl(tor_addr_to_in6_addr32(a)[3]) : 0;
 }
 /** Return the address family of <b>a</b>.  Possible values are:
@@ -85,6 +97,9 @@ tor_addr_to_mapped_ipv4h(const tor_addr_t *a)
 static INLINE sa_family_t
 tor_addr_family(const tor_addr_t *a)
 {
+  if(a == NULL)
+    return 0;
+  else
   return a->family;
 }
 /** Return an in_addr* equivalent to <b>a</b>, or NULL if <b>a</b> is not
@@ -92,6 +107,9 @@ tor_addr_family(const tor_addr_t *a)
 static INLINE const struct in_addr *
 tor_addr_to_in(const tor_addr_t *a)
 {
+  if(a == NULL)
+    return 0;
+  else
   return a->family == AF_INET ? &a->addr.in_addr : NULL;
 }
 /** Return true iff <b>a</b> is an IPv4 address equal to the host-ordered

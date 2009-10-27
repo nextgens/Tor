@@ -1569,13 +1569,12 @@ tor_inet_pton(int af, const char *src, void *dst)
 int
 tor_lookup_hostname(const char *name, tor_addr_t *addr)
 {
-  tor_addr_t myaddr;
   int ret;
 
-  if ((ret = tor_addr_lookup(name, AF_UNSPEC, &myaddr)))
+  if ((ret = tor_addr_lookup(name, AF_UNSPEC, addr)))
     return ret;
 
-  switch (tor_addr_family(&myaddr)) {
+  switch (tor_addr_family(addr)) {
     case AF_INET:
     case AF_INET6:
       return ret;

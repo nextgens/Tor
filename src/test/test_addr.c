@@ -10,21 +10,21 @@
 static void
 test_addr_basic(void)
 {
-  tor_addr_t *addr = NULL;
+  tor_addr_t addr;
   uint16_t u16;
   char *cp;
 
   /* Test parse_addr_port */
   cp = NULL; u16 = 3;
   test_eq(parse_addr_port(LOG_WARN, "localhost", &cp, NULL, &u16), NULL);
-  test_assert(!parse_addr_port(LOG_WARN, "1.2.3.4", &cp, addr, &u16));
+  test_assert(!parse_addr_port(LOG_WARN, "1.2.3.4", &cp, &addr, &u16));
   test_streq(cp, "1.2.3.4");
-  test_assert(tor_addr_eq_ipv4h(addr, 0x01020304u));
+  test_eq(tor_addr_to_ipv4h(&addr), 0x01020304u);
   test_eq(u16, 0);
   tor_free(cp);
-  test_assert(!parse_addr_port(LOG_WARN, "4.3.2.1:99", &cp, addr, &u16));
+  test_assert(!parse_addr_port(LOG_WARN, "4.3.2.1:99", &cp, &addr, &u16));
   test_streq(cp, "4.3.2.1");
-  test_assert(tor_addr_eq_ipv4h(addr, 0x04030201u));
+  test_eq(tor_addr_to_ipv4h(&addr), 0x04030201u);
   test_eq(u16, 99);
   tor_free(cp);
   test_assert(!parse_addr_port(LOG_WARN, "nonexistent.address:4040",
@@ -32,14 +32,14 @@ test_addr_basic(void)
   test_streq(cp, "nonexistent.address");
   test_eq(u16, 4040);
   tor_free(cp);
-  test_assert(!parse_addr_port(LOG_WARN, "localhost:9999", &cp, addr, &u16));
+  test_assert(!parse_addr_port(LOG_WARN, "localhost:9999", &cp, &addr, &u16));
   test_streq(cp, "localhost");
-  test_assert(tor_addr_eq_ipv4h(addr, 0x7f000001u));
+  test_eq(tor_addr_to_ipv4h(&addr), 0x7f000001u);
   test_eq(u16, 9999);
   tor_free(cp);
-  test_assert(!parse_addr_port(LOG_WARN, "torproject.org", NULL, addr, &u16));
+  test_assert(!parse_addr_port(LOG_WARN, "localhost", NULL, &addr, &u16));
   test_eq(cp, NULL);
-  test_assert(tor_addr_eq_ipv4h(addr, 0x7f000001u));
+  test_eq(tor_addr_to_ipv4h(&addr), 0x7f000001u);
   test_eq(u16, 0);
   tor_free(cp);
   test_eq(0, addr_mask_get_bits(0x0u));

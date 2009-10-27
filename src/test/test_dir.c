@@ -647,7 +647,7 @@ test_same_voter(networkstatus_voter_info_t *v1,
   test_streq(v1->nickname, v2->nickname);
   test_memeq(v1->identity_digest, v2->identity_digest, DIGEST_LEN);
   test_streq(v1->address, v2->address);
-  test_eq(v1->addr, v2->addr);
+  test_assert(tor_addr_eq(v1->addr, v2->addr));
   test_eq(v1->dir_port, v2->dir_port);
   test_eq(v1->or_port, v2->or_port);
   test_streq(v1->contact, v2->contact);
@@ -769,6 +769,7 @@ test_dir_v3_networkstatus(void)
                      0, SPLIT_SKIP_SPACE|SPLIT_IGNORE_BLANK, 0);
   vote->voters = smartlist_create();
   voter = tor_malloc_zero(sizeof(networkstatus_voter_info_t));
+  voter->addr = tor_malloc_zero(sizeof(tor_addr_t));
   voter->nickname = tor_strdup("Voter1");
   voter->address = tor_strdup("1.2.3.4");
   tor_addr_from_ipv4h(voter->addr, 0x01020304);
@@ -865,7 +866,7 @@ test_dir_v3_networkstatus(void)
   voter = smartlist_get(v1->voters, 0);
   test_streq(voter->nickname, "Voter1");
   test_streq(voter->address, "1.2.3.4");
-  test_eq(voter->addr, 0x01020304);
+  test_eq(tor_addr_to_ipv4h(voter->addr), 0x01020304);
   test_eq(voter->dir_port, 80);
   test_eq(voter->or_port, 9000);
   test_streq(voter->contact, "voter@example.com");

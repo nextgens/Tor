@@ -2541,6 +2541,7 @@ networkstatus_parse_vote_from_string(const char *s, const char **eos_out,
       if (voter)
         smartlist_add(ns->voters, voter);
       voter = tor_malloc_zero(sizeof(networkstatus_voter_info_t));
+      voter->addr = tor_malloc_zero(sizeof(tor_addr_t));
       voter->sigs = smartlist_create();
       if (ns->type != NS_TYPE_CONSENSUS)
         memcpy(voter->vote_digest, ns_digests.d[DIGEST_SHA1], DIGEST_LEN);

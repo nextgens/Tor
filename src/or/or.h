@@ -1691,7 +1691,7 @@ typedef struct networkstatus_voter_info_t {
    * consensuses, we treat legacy keys as additional signers. */
   char legacy_id_digest[DIGEST_LEN];
   char *address; /**< Address of this voter, in string format. */
-  uint32_t addr; /**< Address of this voter, in IPv4, in host order. */
+  tor_addr_t *addr; /**< Address of this voter, in IPv4 for now, in host order. */
   uint16_t dir_port; /**< Directory port of this voter */
   uint16_t or_port; /**< OR port of this voter */
   char *contact; /**< Contact information for this voter. */
@@ -3208,7 +3208,7 @@ void config_free_lines(config_line_t *front);
 setopt_err_t options_trial_assign(config_line_t *list, int use_defaults,
                                   int clear_first, char **msg);
 int resolve_my_address(int warn_severity, or_options_t *options,
-                       uint32_t *addr, char **hostname_out);
+                       tor_addr_t *addr, char **hostname_out);
 int is_local_addr(const tor_addr_t *addr) ATTR_PURE;
 void options_init(or_options_t *options);
 int options_init_from_torrc(int argc, char **argv);
@@ -4721,7 +4721,7 @@ int router_digest_is_me(const char *digest);
 int router_extrainfo_digest_is_me(const char *digest);
 int router_is_me(routerinfo_t *router);
 int router_fingerprint_is_me(const char *fp);
-int router_pick_published_address(or_options_t *options, uint32_t *addr);
+int router_pick_published_address(or_options_t *options, tor_addr_t *addr);
 int router_rebuild_descriptor(int force);
 int router_dump_router_to_string(char *s, size_t maxlen, routerinfo_t *router,
                                  crypto_pk_env_t *ident_key);
@@ -4753,7 +4753,7 @@ typedef struct trusted_dir_server_t {
   char *description;
   char *nickname;
   char *address; /**< Hostname. */
-  uint32_t addr; /**< IPv4 address. */
+  tor_addr_t *addr; /**< IPv4 addresses only at the moment. */
   uint16_t dir_port; /**< Directory port. */
   uint16_t or_port; /**< OR port: Used for tunneling connections. */
   char digest[DIGEST_LEN]; /**< Digest of identity key. */

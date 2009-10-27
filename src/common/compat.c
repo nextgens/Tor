@@ -1567,17 +1567,18 @@ tor_inet_pton(int af, const char *src, void *dst)
  * doesn't treat raw IP addresses properly.)
  */
 int
-tor_lookup_hostname(const char *name, uint32_t *addr)
+tor_lookup_hostname(const char *name, tor_addr_t *addr)
 {
   tor_addr_t myaddr;
   int ret;
 
-  if ((ret = tor_addr_lookup(name, AF_INET, &myaddr)))
+  if ((ret = tor_addr_lookup(name, AF_UNSPEC, &myaddr)))
     return ret;
 
-  if (tor_addr_family(&myaddr) == AF_INET) {
-    *addr = tor_addr_to_ipv4h(&myaddr);
-    return ret;
+  switch (tor_addr_family(&myaddr)) {
+    case AF_INET:
+    case AF_INET6:
+      return ret;
   }
 
   return -1;

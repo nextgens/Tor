@@ -99,7 +99,10 @@ tor_addr_to_in(const tor_addr_t *a)
 static INLINE int
 tor_addr_eq_ipv4h(const tor_addr_t *a, uint32_t u)
 {
-  return a->family == AF_INET ? (tor_addr_to_ipv4h(a) == u) : 0;
+  if(a == NULL)
+    return 0;
+  else
+    return a->family == AF_INET ? (tor_addr_to_ipv4h(a) == u) : 0;
 }
 
 #define TOR_ADDR_BUF_LEN 48 /* [ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255]
@@ -164,7 +167,7 @@ int tor_addr_is_loopback(const tor_addr_t *addr);
 /* IPv4 helpers */
 int is_internal_IP(uint32_t ip, int for_listening) ATTR_PURE;
 int parse_addr_port(int severity, const char *addrport, char **address,
-                    uint32_t *addr, uint16_t *port_out);
+                    tor_addr_t *addr, uint16_t *port_out);
 int parse_port_range(const char *port, uint16_t *port_min_out,
                      uint16_t *port_max_out);
 int parse_addr_and_port_range(const char *s, uint32_t *addr_out,

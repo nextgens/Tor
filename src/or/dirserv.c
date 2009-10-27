@@ -1116,7 +1116,7 @@ int
 directory_fetches_from_authorities(or_options_t *options)
 {
   routerinfo_t *me;
-  uint32_t addr;
+  tor_addr_t addr;
   if (options->FetchDirInfoEarly)
     return 1;
   if (options->BridgeRelay == 1)
@@ -2429,7 +2429,7 @@ dirserv_generate_networkstatus_vote_obj(crypto_pk_env_t *private_key,
 {
   or_options_t *options = get_options();
   networkstatus_t *v3_out = NULL;
-  uint32_t addr;
+  tor_addr_t addr;
   char *hostname = NULL, *client_versions = NULL, *server_versions = NULL;
   const char *contact;
   smartlist_t *routers, *routerstatuses;
@@ -2451,13 +2451,14 @@ dirserv_generate_networkstatus_vote_obj(crypto_pk_env_t *private_key,
   tor_assert(private_key);
   tor_assert(cert);
 
+  tor_addr_from_ipv4h(&addr, 0); /* request ipv4 explicitly */
   if (resolve_my_address(LOG_WARN, options, &addr, &hostname)<0) {
     log_warn(LD_NET, "Couldn't resolve my hostname");
     return NULL;
   }
   if (!strchr(hostname, '.')) {
     tor_free(hostname);
-    hostname = tor_dup_ip(addr);
+    hostname = tor_dup_addr(&addr);
   }
   if (crypto_pk_get_digest(private_key, signing_key_digest)<0) {
     log_err(LD_BUG, "Error computing signing key digest");
@@ -2615,7 +2616,7 @@ dirserv_generate_networkstatus_vote_obj(crypto_pk_env_t *private_key,
     memcpy(sig->signing_key_digest, signing_key_digest, DIGEST_LEN);
   }
   voter->address = hostname;
-  voter->addr = addr;
+  voter->addr = &addr;
   voter->dir_port = options->DirPort;
   voter->or_port = options->ORPort;
   voter->contact = tor_strdup(contact);
@@ -2652,8 +2653,7 @@ generate_v2_networkstatus_opinion(void)
   char ipaddr[INET_NTOA_BUF_LEN];
   char published[ISO_TIME_LEN+1];
   char digest[DIGEST_LEN];
-  struct in_addr in;
-  uint32_t addr;
+  tor_addr_t addr;
   crypto_pk_env_t *private_key;
   routerlist_t *rl = router_get_routerlist();
   time_t now = time(NULL);
@@ -2670,12 +2670,12 @@ generate_v2_networkstatus_opinion(void)
 
   private_key = get_identity_key();
 
+  tor_addr_from_ipv4h(&addr, 0); /* Force ipv4 resolution */
   if (resolve_my_address(LOG_WARN, options, &addr, &hostname)<0) {
     log_warn(LD_NET, "Couldn't resolve my hostname");
     goto done;
   }
-  in.s_addr = htonl(addr);
-  tor_inet_ntoa(&in, ipaddr, sizeof(ipaddr));
+  tor_inet_ntoa(tor_addr_to_in(&addr), ipaddr, sizeof(ipaddr));
 
   format_iso_time(published, now);
 

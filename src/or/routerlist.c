@@ -3691,21 +3691,21 @@ add_trusted_dir_server(const char *nickname, const char *address,
                        authority_type_t type)
 {
   trusted_dir_server_t *ent;
-  uint32_t a;
+  tor_addr_t *a;
   char *hostname = NULL;
   size_t dlen;
   if (!trusted_dir_servers)
     trusted_dir_servers = smartlist_create();
 
   if (!address) { /* The address is us; we should guess. */
-    if (resolve_my_address(LOG_WARN, get_options(), &a, &hostname) < 0) {
+    if (resolve_my_address(LOG_WARN, get_options(), a, &hostname) < 0) {
       log_warn(LD_CONFIG,
                "Couldn't find a suitable address when adding ourself as a "
                "trusted directory server.");
       return NULL;
     }
   } else {
-    if (tor_lookup_hostname(address, &a)) {
+    if (tor_lookup_hostname(address, a)) {
       log_warn(LD_CONFIG,
                "Unable to lookup address for directory server at '%s'",
                address);
@@ -3717,7 +3717,7 @@ add_trusted_dir_server(const char *nickname, const char *address,
   ent = tor_malloc_zero(sizeof(trusted_dir_server_t));
   ent->nickname = nickname ? tor_strdup(nickname) : NULL;
   ent->address = hostname;
-  ent->addr = a;
+  ent->addr = a->addr;
   ent->dir_port = dir_port;
   ent->or_port = or_port;
   ent->is_running = 1;

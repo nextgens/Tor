@@ -67,8 +67,7 @@ format_networkstatus_vote(crypto_pk_env_t *private_signing_key,
   char fingerprint[FINGERPRINT_LEN+1];
   char ipaddr[INET_NTOA_BUF_LEN];
   char digest[DIGEST_LEN];
-  struct in_addr in;
-  uint32_t addr;
+  tor_addr_t *addr;
   routerlist_t *rl = router_get_routerlist();
   char *version_lines = NULL;
   networkstatus_voter_info_t *voter;
@@ -79,8 +78,7 @@ format_networkstatus_vote(crypto_pk_env_t *private_signing_key,
   voter = smartlist_get(v3_ns->voters, 0);
 
   addr = voter->addr;
-  in.s_addr = htonl(addr);
-  tor_inet_ntoa(&in, ipaddr, sizeof(ipaddr));
+  tor_inet_ntoa(tor_addr_to_in(addr), ipaddr, sizeof(ipaddr));
 
   base16_encode(fingerprint, sizeof(fingerprint),
                 v3_ns->cert->cache_info.identity_digest, DIGEST_LEN);
@@ -845,7 +843,6 @@ networkstatus_compute_consensus(smartlist_t *votes,
     SMARTLIST_FOREACH(dir_sources, const dir_src_ent_t *, e,
     {
       char buf[1024];
-      struct in_addr in;
       char ip[INET_NTOA_BUF_LEN];
       char fingerprint[HEX_DIGEST_LEN+1];
       char votedigest[HEX_DIGEST_LEN+1];
@@ -855,8 +852,7 @@ networkstatus_compute_consensus(smartlist_t *votes,
       if (e->is_legacy)
         tor_assert(consensus_method >= 2);
 
-      in.s_addr = htonl(voter->addr);
-      tor_inet_ntoa(&in, ip, sizeof(ip));
+      tor_inet_ntoa(tor_addr_to_in(voter->addr), ip, sizeof(ip));
       base16_encode(fingerprint, sizeof(fingerprint), e->digest, DIGEST_LEN);
       base16_encode(votedigest, sizeof(votedigest), voter->vote_digest,
                     DIGEST_LEN);

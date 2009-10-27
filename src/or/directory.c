@@ -257,7 +257,6 @@ directory_post_to_dirservers(uint8_t dir_purpose, uint8_t router_purpose,
   SMARTLIST_FOREACH_BEGIN(dirservers, trusted_dir_server_t *, ds) {
       routerstatus_t *rs = &(ds->fake_status);
       size_t upload_len = payload_len;
-      tor_addr_t ds_addr;
 
       if ((type & ds->type) == 0)
         continue;
@@ -271,9 +270,8 @@ directory_post_to_dirservers(uint8_t dir_purpose, uint8_t router_purpose,
         log_info(LD_DIR, "Uploading an extrainfo too (length %d)",
                  (int) extrainfo_len);
       }
-      tor_addr_from_ipv4h(&ds_addr, ds->addr);
       post_via_tor = purpose_needs_anonymity(dir_purpose, router_purpose) ||
-        !fascist_firewall_allows_address_dir(&ds_addr, ds->dir_port);
+        !fascist_firewall_allows_address_dir(ds->addr, ds->dir_port);
       directory_initiate_command_routerstatus(rs, dir_purpose,
                                               router_purpose,
                                               post_via_tor,

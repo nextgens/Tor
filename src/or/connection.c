@@ -733,20 +733,24 @@ static struct sockaddr_in *
 create_inet_sockaddr(const char *listenaddress, uint16_t listenport,
                      char **readable_address, socklen_t *socklen_out) {
   struct sockaddr_in *listenaddr = NULL;
-  uint32_t addr;
+  tor_addr_t *addr = NULL;
   uint16_t usePort = 0;
 
   if (parse_addr_port(LOG_WARN,
-                      listenaddress, readable_address, &addr, &usePort)<0) {
+                      listenaddress, readable_address, addr, &usePort)<0) {
     log_warn(LD_CONFIG,
              "Error parsing/resolving ListenAddress %s", listenaddress);
+    goto err;
+  }
+  if (addr->family == AF_INET6) {
+    log_info(LD_CONFIG, "Error parsing ListenAddress: we found an ipv6 address! %s", listenaddress);
     goto err;
   }
   if (usePort==0)
     usePort = listenport;
 
   listenaddr = tor_malloc_zero(sizeof(struct sockaddr_in));
-  listenaddr->sin_addr.s_addr = htonl(addr);
+  listenaddr->sin_addr.s_addr = tor_addr_to_ipv4h(addr);
   listenaddr->sin_family = AF_INET;
   listenaddr->sin_port = htons((uint16_t) usePort);
 

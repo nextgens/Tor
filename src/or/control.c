@@ -1310,10 +1310,10 @@ getinfo_helper_misc(control_connection_t *conn, const char *question,
   } else if (!strcmp(question, "features/names")) {
     *answer = tor_strdup("VERBOSE_NAMES EXTENDED_EVENTS");
   } else if (!strcmp(question, "address")) {
-    uint32_t addr;
+    tor_addr_t addr;
     if (router_pick_published_address(get_options(), &addr) < 0)
       return -1;
-    *answer = tor_dup_ip(addr);
+    *answer = tor_dup_addr(&addr);
   } else if (!strcmp(question, "dir-usage")) {
     *answer = directory_dump_request_log();
   } else if (!strcmp(question, "fingerprint")) {

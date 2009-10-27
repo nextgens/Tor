@@ -2359,11 +2359,13 @@ static uint32_t last_resolved_addr = 0;
  * set *<b>hostname_out</b> to a new string holding the hostname we used to
  * get the address. Return 0 if all is well, or -1 if we can't find a suitable
  * public IP address.
+ *
  */
 int
 resolve_my_address(int warn_severity, or_options_t *options,
-                   uint32_t *addr_out, char **hostname_out)
+                   tor_addr_t *tor_addr, char **hostname_out)
 {
+  uint32_t addr_out;
   struct in_addr in;
   struct hostent *rent;
   char hostname[256];
@@ -2375,7 +2377,10 @@ resolve_my_address(int warn_severity, or_options_t *options,
   int notice_severity = warn_severity <= LOG_NOTICE ?
                           LOG_NOTICE : warn_severity;
 
-  tor_assert(addr_out);
+  tor_assert(tor_addr != NULL);
+
+  if(tor_addr->family != AF_INET)
+    return -1;
 
   if (address && *address) {
     strlcpy(hostname, address, sizeof(hostname));
@@ -2478,8 +2483,8 @@ resolve_my_address(int warn_severity, or_options_t *options,
   }
 
   log_debug(LD_CONFIG, "Resolved Address to '%s'.", tmpbuf);
-  *addr_out = ntohl(in.s_addr);
-  if (last_resolved_addr && last_resolved_addr != *addr_out) {
+  addr_out = ntohl(in.s_addr);
+  if (last_resolved_addr && last_resolved_addr != addr_out) {
     /* Leave this as a notice, regardless of the requested severity,
      * at least until dynamic IP address support becomes bulletproof. */
     log_notice(LD_NET,
@@ -2487,7 +2492,7 @@ resolve_my_address(int warn_severity, or_options_t *options,
                tmpbuf);
     ip_address_changed(0);
   }
-  if (last_resolved_addr != *addr_out) {
+  if (last_resolved_addr != addr_out) {
     const char *method;
     const char *h = hostname;
     if (explicit_ip) {
@@ -2505,9 +2510,12 @@ resolve_my_address(int warn_severity, or_options_t *options,
                                 "EXTERNAL_ADDRESS ADDRESS=%s METHOD=%s %s%s",
                                 tmpbuf, method, h?"HOSTNAME=":"", h);
   }
-  last_resolved_addr = *addr_out;
+  last_resolved_addr = addr_out;
   if (hostname_out)
     *hostname_out = tor_strdup(hostname);
+
+  tor_addr_from_ipv4h(tor_addr, addr_out);
+
   return 0;
 }
 
@@ -3011,10 +3019,10 @@ options_validate(or_options_t *old_options, or_options_t *options,
     for (line = opt; line; line = line->next) {
       char *address = NULL;
       uint16_t port;
-      uint32_t addr;
+      tor_addr_t addr;
       if (parse_addr_port(LOG_WARN, line->value, &address, &addr, &port)<0)
         continue; /* We'll warn about this later. */
-      if (!is_internal_IP(addr, 1) &&
+      if (!tor_addr_is_internal(&addr, 1) &&
           (!old_options || !config_lines_eq(old, opt))) {
         log_warn(LD_CONFIG,
              "You specified a public address '%s' for a %s. Other "
@@ -3072,7 +3080,8 @@ options_validate(or_options_t *old_options, or_options_t *options,
 
   if (authdir_mode(options)) {
     /* confirm that our address isn't broken, so we can complain now */
-    uint32_t tmp;
+    tor_addr_t tmp;
+    tor_addr_from_ipv4h(&tmp, 0); /* We request ipv4 explicitly */
     if (resolve_my_address(LOG_WARN, options, &tmp, NULL) < 0)
       REJECT("Failed to resolve/guess local address. See logs for details.");
   }

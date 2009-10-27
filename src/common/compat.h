@@ -393,10 +393,12 @@ struct sockaddr_in6 {
 };
 #endif
 
+struct tor_addr_t;
+
 int tor_inet_aton(const char *cp, struct in_addr *addr) ATTR_NONNULL((1,2));
 const char *tor_inet_ntop(int af, const void *src, char *dst, size_t len);
 int tor_inet_pton(int af, const char *src, void *dst);
-int tor_lookup_hostname(const char *name, uint32_t *addr) ATTR_NONNULL((1,2));
+int tor_lookup_hostname(const char *name, struct tor_addr_t *addr) ATTR_NONNULL((1,2));
 void set_socket_nonblocking(int socket);
 int tor_socketpair(int family, int type, int protocol, int fd[2]);
 int network_init(void);

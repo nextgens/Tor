@@ -1115,7 +1115,7 @@ is_internal_IP(uint32_t ip, int for_listening)
  */
 int
 parse_addr_port(int severity, const char *addrport, char **address,
-                uint32_t *addr, uint16_t *port_out)
+                tor_addr_t *addr, uint16_t *port_out)
 {
   const char *colon;
   char *_address = NULL;
@@ -1150,7 +1150,7 @@ parse_addr_port(int severity, const char *addrport, char **address,
     if (tor_lookup_hostname(_address,addr)) {
       log_fn(severity, LD_NET, "Couldn't look up %s", escaped(_address));
       ok = 0;
-      *addr = 0;
+      addr = NULL;
     }
   }
 

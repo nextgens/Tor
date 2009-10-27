@@ -1235,14 +1235,14 @@ router_get_my_extrainfo(void)
  * declaration verbatim rather than as digests. */
 static smartlist_t *warned_nonexistent_family = NULL;
 
-static int router_guess_address_from_dir_headers(uint32_t *guess);
+static int router_guess_address_from_dir_headers(tor_addr_t *guess);
 
 /** Make a current best guess at our address, either because
  * it's configured in torrc, or because we've learned it from
  * dirserver headers. Place the answer in *<b>addr</b> and return
  * 0 on success, else return -1 if we have no guess. */
 int
-router_pick_published_address(or_options_t *options, uint32_t *addr)
+router_pick_published_address(or_options_t *options, tor_addr_t *addr)
 {
   if (resolve_my_address(LOG_INFO, options, addr, NULL) < 0) {
     log_info(LD_CONFIG, "Could not determine our address locally. "
@@ -1265,7 +1265,7 @@ router_rebuild_descriptor(int force)
 {
   routerinfo_t *ri;
   extrainfo_t *ei;
-  uint32_t addr;
+  tor_addr_t addr;
   char platform[256];
   int hibernating = we_are_hibernating();
   size_t ei_size;
@@ -1284,9 +1284,9 @@ router_rebuild_descriptor(int force)
 
   ri = tor_malloc_zero(sizeof(routerinfo_t));
   ri->cache_info.routerlist_index = -1;
-  ri->address = tor_dup_ip(addr);
+  ri->address = tor_dup_ip(tor_addr_to_ipv4h(&addr));
   ri->nickname = tor_strdup(options->Nickname);
-  ri->addr = addr;
+  ri->addr = tor_addr_to_ipv4h(&addr);
   ri->or_port = options->ORPort;
   ri->dir_port = options->DirPort;
   ri->cache_info.published_on = time(NULL);
@@ -1483,21 +1483,17 @@ check_descriptor_bandwidth_changed(time_t now)
 /** Note at log level severity that our best guess of address has changed from
  * <b>prev</b> to <b>cur</b>. */
 static void
-log_addr_has_changed(int severity, uint32_t prev, uint32_t cur,
+log_addr_has_changed(int severity, tor_addr_t *prev, tor_addr_t *cur,
                      const char *source)
 {
   char addrbuf_prev[INET_NTOA_BUF_LEN];
   char addrbuf_cur[INET_NTOA_BUF_LEN];
-  struct in_addr in_prev;
-  struct in_addr in_cur;
 
-  in_prev.s_addr = htonl(prev);
-  tor_inet_ntoa(&in_prev, addrbuf_prev, sizeof(addrbuf_prev));
+  tor_inet_ntoa(tor_addr_to_in(prev), addrbuf_prev, sizeof(addrbuf_prev));
 
-  in_cur.s_addr = htonl(cur);
-  tor_inet_ntoa(&in_cur, addrbuf_cur, sizeof(addrbuf_cur));
+  tor_inet_ntoa(tor_addr_to_in(cur), addrbuf_cur, sizeof(addrbuf_cur));
 
-  if (prev)
+  if (prev == NULL)
     log_fn(severity, LD_GENERAL,
            "Our IP Address has changed from %s to %s; "
            "rebuilding descriptor (source: %s).",
@@ -1514,21 +1510,21 @@ log_addr_has_changed(int severity, uint32_t prev, uint32_t cur,
 void
 check_descriptor_ipaddress_changed(time_t now)
 {
-  uint32_t prev, cur;
+  tor_addr_t prev, cur;
   or_options_t *options = get_options();
   (void) now;
 
   if (!desc_routerinfo)
     return;
 
-  prev = desc_routerinfo->addr;
+  tor_addr_from_ipv4h(&prev, desc_routerinfo->addr);
   if (resolve_my_address(LOG_INFO, options, &cur, NULL) < 0) {
     log_info(LD_CONFIG,"options->Address didn't resolve into an IP.");
     return;
   }
 
-  if (prev != cur) {
-    log_addr_has_changed(LOG_NOTICE, prev, cur, "resolve");
+  if (tor_addr_eq(&prev, &cur)) {
+    log_addr_has_changed(LOG_NOTICE, &prev, &cur, "resolve");
     ip_address_changed(0);
   }
 }
@@ -1564,7 +1560,7 @@ router_new_address_suggestion(const char *suggestion,
     return;
   }
 
-  if (resolve_my_address(LOG_INFO, options, &cur, NULL) >= 0) {
+  if (resolve_my_address(LOG_INFO, options, cur, NULL) >= 0) {
     /* We're all set -- we already know our address. Great. */
     last_guessed_ip = cur; /* store it in case we need it later */
     return;
@@ -1600,7 +1596,7 @@ router_new_address_suggestion(const char *suggestion,
  * about our address based on directory headers, answer it and return
  * 0; else return -1. */
 static int
-router_guess_address_from_dir_headers(uint32_t *guess)
+router_guess_address_from_dir_headers(tor_addr_t *guess)
 {
   if (last_guessed_ip) {
     *guess = last_guessed_ip;

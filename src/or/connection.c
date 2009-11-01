@@ -729,37 +729,46 @@ connection_expire_held_open(void)
  *
  * The listenaddr struct has to be freed by the caller.
  */
-static struct sockaddr_in *
+static struct sockaddr *
 create_inet_sockaddr(const char *listenaddress, uint16_t listenport,
                      char **readable_address, socklen_t *socklen_out) {
+  struct sockaddr_in6 *listenaddr6 = NULL;
   struct sockaddr_in *listenaddr = NULL;
-  tor_addr_t *addr = NULL;
+  tor_addr_t addr;
   uint16_t usePort = 0;
 
   if (parse_addr_port(LOG_WARN,
-                      listenaddress, readable_address, addr, &usePort)<0) {
+                      listenaddress, readable_address, &addr, &usePort)<0) {
     log_warn(LD_CONFIG,
              "Error parsing/resolving ListenAddress %s", listenaddress);
-    goto err;
-  }
-  if (addr != NULL && addr->family == AF_INET6) {
-    log_info(LD_CONFIG, "Error parsing ListenAddress: we found an ipv6 address! %s", listenaddress);
     goto err;
   }
   if (usePort==0)
     usePort = listenport;
 
-  listenaddr = tor_malloc_zero(sizeof(struct sockaddr_in));
-  listenaddr->sin_addr.s_addr = tor_addr_to_ipv4h(addr);
-  listenaddr->sin_family = AF_INET;
-  listenaddr->sin_port = htons((uint16_t) usePort);
+  if(tor_addr_family(&addr) == AF_INET) {
+	  listenaddr = tor_malloc_zero(sizeof(struct sockaddr_in));
+	  listenaddr->sin_family = AF_INET;
+	  listenaddr->sin_addr.s_addr = tor_addr_to_ipv4h(&addr);
+	  listenaddr->sin_port = htons((uint16_t) usePort);
 
-  *socklen_out = sizeof(struct sockaddr_in);
+	  *socklen_out = sizeof(struct sockaddr_in);
+  } else if (tor_addr_family(&addr) == AF_INET6 ) {
+	  listenaddr6 = tor_malloc_zero(sizeof(struct sockaddr_in6));
+	  listenaddr6->sin6_family = AF_INET6;
+	  listenaddr6->sin6_addr = addr.addr.in6_addr; // tor_addr_to_in6? what about byte order?
+	  listenaddr6->sin6_port = htons((uint16_t) usePort);
 
-  return listenaddr;
+	  *socklen_out = sizeof(struct sockaddr_in6);
+  }
+
+  return (tor_addr_family(&addr) == AF_INET ?
+		  (struct sockaddr *) listenaddr :
+		  (struct sockaddr *) listenaddr6);
 
  err:
   tor_free(listenaddr);
+  tor_free(listenaddr6);
   return NULL;
 }
 
@@ -846,21 +855,23 @@ connection_create_listener(struct sockaddr *listensockaddr, socklen_t socklen,
     return NULL;
   }
 
-  if (listensockaddr->sa_family == AF_INET) {
+  if (listensockaddr->sa_family == AF_INET || listensockaddr->sa_family == AF_INET6) {
     int is_tcp = (type != CONN_TYPE_AP_DNS_LISTENER);
+    int is_v6 = (listensockaddr->sa_family == AF_INET6);
 #ifndef MS_WINDOWS
     int one=1;
 #endif
     if (is_tcp)
       start_reading = 1;
 
-    usePort = ntohs( (uint16_t)
-                     ((struct sockaddr_in *)listensockaddr)->sin_port);
+    usePort = ntohs( (uint16_t) (is_v6 ?
+			    ((struct sockaddr_in *)listensockaddr)->sin_port :
+			    ((struct sockaddr_in6 *)listensockaddr)->sin6_port));
 
     log_notice(LD_NET, "Opening %s on %s:%d",
                conn_type_to_string(type), address, usePort);
 
-    s = tor_open_socket(PF_INET,
+    s = tor_open_socket(is_v6 ? PF_INET6 : PF_INET,
                         is_tcp ? SOCK_STREAM : SOCK_DGRAM,
                         is_tcp ? IPPROTO_TCP: IPPROTO_UDP);
     if (s < 0) {
@@ -876,6 +887,9 @@ connection_create_listener(struct sockaddr *listensockaddr, socklen_t socklen,
     setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (void*) &one,
                (socklen_t)sizeof(one));
 #endif
+
+    if(is_v6) //FIXME: how to deal with dual stacks?
+	    setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&one, sizeof(one));
 
     if (bind(s,listensockaddr,socklen) < 0) {
       const char *helpfulhint = "";
